@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
+from decouple import config
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,10 +20,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-4z@^!thb4%8$82=h%qh!a)_^)z6t=g$ghp9_--ce3@rgvw!1ed'
+SECRET_KEY = config("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config("DJANGO_DEBUG",cast=bool)
+
+BASE_URL = config("BASE_URL", default=None)
 
 ALLOWED_HOSTS = [
     ".railway.app"
@@ -89,7 +91,17 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+CONN_MAX_AGE= config("CONN_MAX_AGE",default=30, cast=int)
+DATABASE_URL= config("DATABASE_URL", cast=str)
 
+if DATABASE_URL is not None:
+    import dj_database_url
+    DATABASES = {
+    'default': dj_database_url.config(
+        default=DATABASE_URL, 
+        conn_max_age=CONN_MAX_AGE,
+        conn_health_checks=True)
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -125,7 +137,25 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATICFILES_BASE_DIR = BASE_DIR / "staticfiles"
+STATICFILES_VENDOR_DIR = STATICFILES_BASE_DIR / "vendors"
+
+# source for python manage.py collectstaticBasically this is telling the Django to look at this folder for all the possible files that are gonna be needed
+# 
+STATICFILES_DIRS = [
+    STATICFILES_BASE_DIR,
+]
+
+# output for pytho manage.py collectstatic
+# locan cdn --> prod cdn
+# this where it is going to look all the files
+# when we run "python manage.py collectstatic"
+# this is where it is going to copy all the files
+STATIC_ROOT = BASE_DIR.parent / "local-cdn"
+
+# if not DEBUG:
+#     STATIC_ROOT = BASE_DIR /"prod-cdn"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
